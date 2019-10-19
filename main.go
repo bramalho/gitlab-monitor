@@ -1,10 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
+	"net/http"
+	"os"
+	"time"
 
-	"github.com/bramalho/gitlab-monitor/client"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -15,48 +18,27 @@ func init() {
 }
 
 func main() {
-	fmt.Println("It works!")
+	router := mux.NewRouter()
 
-	pid := "1945"
+	router.HandleFunc("/", HomeHandler).Methods("GET")
 
-	git := client.GetClient()
+	router.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+	})
 
-	project, err := client.GetProject(git, pid)
-	if err == nil {
-		fmt.Println(project.NameWithNamespace)
-		fmt.Println(project.AvatarURL)
+	port, exists := os.LookupEnv("PORT")
+	if exists == false {
+		port = "8080"
 	}
 
-	mergeRequests, err := client.GetMergeRequests(git, pid)
-	if err == nil {
-		for _, mergeRequest := range mergeRequests {
-			fmt.Println(mergeRequest.Title)
-			fmt.Println(mergeRequest.WorkInProgress)
-			fmt.Println(mergeRequest.CreatedAt)
-			fmt.Println(mergeRequest.Author.Name)
-			fmt.Println(mergeRequest.Author.AvatarURL)
-			fmt.Println(mergeRequest.Upvotes)
-			fmt.Println(mergeRequest.Downvotes)
-		}
+	srv := &http.Server{
+		Handler:      router,
+		Addr:         "localhost:" + port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
 
-	pipelines, err := client.GetPipelines(git, pid)
-	if err == nil {
-		for _, pipeline := range pipelines {
-			fmt.Println(pipeline.Ref)
-			fmt.Println(pipeline.Status)
-			fmt.Println(pipeline.ID)
+	log.Println("Application is running on localhost:" + port)
 
-			jobs, err := client.GetJobs(git, pid, pipeline.ID)
-			if err == nil {
-				for _, job := range jobs {
-					fmt.Println(job.Name)
-					fmt.Println(job.Status)
-					fmt.Println(job.StartedAt)
-					fmt.Println(job.User.Name)
-					fmt.Println(job.User.AvatarURL)
-				}
-			}
-		}
-	}
+	log.Fatal(srv.ListenAndServe())
 }
