@@ -7,59 +7,87 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.3.1/darkly/bootstrap.min.css">
-
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    
     <title>GitLab Monitor</title>
 
     <style>
+        p {
+            margin: 5px;
+        }
         .merge-request {
-            padding: 5px;
+            padding: 5px 7px;
         }
-        .pipeline-project {
+        .pipeline {
+            padding: 5px 7px;
+        }
+        .project {
             font-weight: bold;
+            font-size: 12px;
         }
-        .pipeline-title {
-            font-weight: bold;
-        }
-        .pipeline-author-avatar {
+        .author-avatar {
             height: 16px;
             border-radius: 50%;
             margin-right: 5px;
         }
-
-
-        .merge-request .pipeline p {
-            margin-bottom: 5px;
+        .badge {
+            border-color: #111;
+            border-style: solid;
+            border-width: 1px;
         }
-        .merge-request .pipeline > .vote {
-            margin-right: 5px;
-        }
-        .pipeline .job {
-            margin-right: 5px;
+        .job {
             height: 23px;
-            padding-top: 6px;
+            padding-top: 4px;
+            padding: 5px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container container-fluid pt-4">
+    <div class="container-fluid pt-4">
         <div class="row">
             <div class="col-md-4">
                 <h5>Merge Requests</h5>
                 {{range .MergeRequests}}
                 {{if .}}
                 <div class="merge-request alert alert-{{.Color}}">
-                    <p class="pipeline-project">{{.Project.Name}}</p>
+                    <p class="project">{{.Project.Name}}</p>
                     <p>{{.Title}}</p>
                     <p>
-                        <img class="pipeline-author-avatar" src="{{.AuthorAvatar}}">{{.AuthorName}}
+                        <img class="author-avatar" src="{{.AuthorAvatar}}">{{.AuthorName}} @ {{.CreatedAt.Format "2006-01-02"}}
                     </p>
+                    {{if .WIP}}
+                    <span class="vote badge badge-danger">WIP</span>
+                    {{end}}
+                    <span class="vote badge badge-pill badge-success"><i class="fa fa-thumbs-up"></i>&nbsp;{{.Upvotes}}</span>
+                    <span class="vote badge badge-pill badge-warning"><i class="fa fa-thumbs-down"></i>&nbsp;{{.Downvotes}}</span>
                 </div>
                 {{end}}
                 {{end}}
             </div>
+
             <div class="col-md-8">
                 <h5>Pipelines</h5>
+                <div class="row">
+                    {{range .Pipelines}}
+                    {{if .}}
+                    <div class="col-md-6">
+                        <div class="pipeline alert alert-{{.Color}}">
+                            <p class="project">{{.Project.Name}}</p>
+                            <p>{{.Ref}}</p>
+                            <p>
+                                    <img class="author-avatar" src="{{.UserAvatar}}">{{.UserName}} @ {{.StartedAt.Format "2006-01-02"}}
+                            </p>
+                            <p>
+                                {{range .Jobs}}
+                                <span class="job badge badge-pill badge-{{.Color}}"><i class="fa fa-{{.Icon}}"></i></span>
+                                {{end}}
+                            </p>
+                        </div>
+                    </div>
+                    {{end}}
+                    {{end}}
+                </div>
             </div>
         </div>
     </div>
