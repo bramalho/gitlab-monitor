@@ -1,30 +1,57 @@
 package main
 
 import (
-	"fmt"
+	"time"
 
 	"github.com/xanzy/go-gitlab"
 )
 
-// GetPieplineData from projects
-func GetPieplineData(c *gitlab.Client, pid string) {
-	pipelines, err := GetPipelines(c, pid)
-	if err == nil {
-		for _, pipeline := range pipelines {
-			fmt.Println(pipeline.Ref)
-			fmt.Println(pipeline.Status)
-			fmt.Println(pipeline.ID)
+// Pipeline struct
+type Pipeline struct {
+	ID     int
+	Ref    string
+	Status string
+	Jobs   []Job
+}
 
-			jobs, err := GetJobs(c, pid, pipeline.ID)
+// Job struct
+type Job struct {
+	Name       string
+	Status     string
+	StartedAt  *time.Time
+	UserName   string
+	UserAvatar string
+}
+
+// GetPieplineData from projects
+func GetPieplineData(c *gitlab.Client, proj Project) []Pipeline {
+	pipelines := []Pipeline{}
+
+	ps, err := GetPipelines(c, proj.ID)
+	if err == nil {
+		for _, p := range ps {
+			jobs := []Job{}
+			js, err := GetJobs(c, proj.ID, p.ID)
 			if err == nil {
-				for _, job := range jobs {
-					fmt.Println(job.Name)
-					fmt.Println(job.Status)
-					fmt.Println(job.StartedAt)
-					fmt.Println(job.User.Name)
-					fmt.Println(job.User.AvatarURL)
+				for _, j := range js {
+					jobs = append(jobs, Job{
+						Name:       j.Name,
+						Status:     j.Status,
+						StartedAt:  j.StartedAt,
+						UserName:   j.User.Name,
+						UserAvatar: j.User.AvatarURL,
+					})
 				}
 			}
+
+			pipelines = append(pipelines, Pipeline{
+				ID:     p.ID,
+				Ref:    p.Ref,
+				Status: p.Status,
+				Jobs:   jobs,
+			})
 		}
 	}
+
+	return pipelines
 }
