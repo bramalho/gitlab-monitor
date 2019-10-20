@@ -3,6 +3,8 @@ package main
 import (
 	"html/template"
 	"net/http"
+
+	"github.com/bradfitz/slice"
 )
 
 // HomeHandler controller method
@@ -23,6 +25,14 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			pipelines = append(pipelines, p)
 		}
 	}
+
+	slice.Sort(mergeRequests[:], func(i, j int) bool {
+		return mergeRequests[i].CreatedAt.UnixNano() > mergeRequests[j].CreatedAt.UnixNano()
+	})
+
+	slice.Sort(pipelines[:], func(i, j int) bool {
+		return pipelines[i].StartedAt.UnixNano() > pipelines[j].StartedAt.UnixNano()
+	})
 
 	tmpl := template.Must(template.ParseFiles("web/template/index.html"))
 	tmpl.Execute(w, struct {
