@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"sync"
 
 	"github.com/bradfitz/slice"
 )
@@ -12,19 +13,29 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	git := GetClient()
 
 	projects := GetProjectData(git)
+
 	mergeRequests := []MergeRequest{}
 	pipelines := []Pipeline{}
-	for _, project := range projects {
-		mrs := GetMergeRequestData(git, project)
-		for _, mr := range mrs {
-			mergeRequests = append(mergeRequests, mr)
-		}
 
-		ps := GetPieplineData(git, project)
-		for _, p := range ps {
-			pipelines = append(pipelines, p)
-		}
+	var wg sync.WaitGroup
+	wg.Add(len(projects))
+
+	for _, project := range projects {
+		go func(project Project) {
+			defer wg.Done()
+			mrs := GetMergeRequestData(git, project)
+			for _, mr := range mrs {
+				mergeRequests = append(mergeRequests, mr)
+			}
+
+			ps := GetPieplineData(git, project)
+			for _, p := range ps {
+				pipelines = append(pipelines, p)
+			}
+		}(project)
 	}
+
+	wg.Wait()
 
 	slice.Sort(mergeRequests[:], func(i, j int) bool {
 		return mergeRequests[i].CreatedAt.UnixNano() > mergeRequests[j].CreatedAt.UnixNano()
