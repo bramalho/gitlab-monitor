@@ -42,7 +42,10 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	slice.Sort(pipelines[:], func(i, j int) bool {
-		return pipelines[i].StartedAt.UnixNano() > pipelines[j].StartedAt.UnixNano()
+		if pipelines[i].StartedAt != nil && pipelines[j].StartedAt != nil {
+			return pipelines[i].StartedAt.UnixNano() > pipelines[j].StartedAt.UnixNano()
+		}
+		return false
 	})
 
 	tmpl := template.Must(template.ParseFiles("web/template/index.html"))
